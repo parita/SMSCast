@@ -1,0 +1,8 @@
+application: vj-tpo
+version: 5
+runtime: python
+api_version: 1
+
+handlers:
+- url: /.*
+  script: SMSCast.py
