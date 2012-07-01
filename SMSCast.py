@@ -27,7 +27,7 @@ meta = "<meta name=\'txtweb-appkey\' content=\'%s\'/>"%appkey
 body = "</head><body>"
 end = "</body></html>"
 
-auth_hash = ['7f8aeaff-e10f-459e-ae5a-969c3d77b174','asa9969055154']
+auth_hash = keys.auth_hash
 done = []
 
 
@@ -55,6 +55,7 @@ class msglog(db.Model):
 	"""Models the log of the messages sent"""
 	msg = db.StringProperty()
 	date = db.StringProperty()
+	arrivalDate = db.DateProperty()
 
 def userlist_key():
 	"""Constructs a datastore key for a Userlist table with userlist as its name"""
@@ -118,9 +119,9 @@ class MainPage(webapp.RequestHandler):
 				today = datetime.date.today()
 				yest = today - datetime.timedelta(1)
 				dayBefYest = today - datetime.timedelta(2)
-				scheduled_msgs = db.GqlQuery("SELECT * FROM msglog WHERE date IN ('%s','%s','%s')"%(str(today),str(yest),str(dayBefYest)))			
+				scheduled_msgs = db.GqlQuery("SELECT * FROM msglog WHERE arrivalDate > '%r'"%today)			
 				for msg in scheduled_msgs:
-					self.response.out.write('<p>%s %s</p>'%(msg.date,msg.msg))		
+					self.response.out.write('<p>%s</p>'%(msg.msg))		
 			
 			elif "unregister" in message:				#keyword for unregistering
 				if (sender in auth_hash) and ('all' in message):#either all users
@@ -148,9 +149,11 @@ class MainPage(webapp.RequestHandler):
 			
 			else:								#keyword to send sms notification to all the registered users
 				if sender in auth_hash:
+					msg = message.split()
 					msglogs = msglog(parent = msglist_key())
 					msglogs.msg = message
 					msglogs.date = str(datetime.date.today())
+					msglogs.arrivalDate = datetime.date(int(msg[2]),int(msg[1]),int(msg[0]))
 					msglogs.put()
 					users = Users.gql("")
 					msg = head + meta + body + str(datetime.date.today()) + ' ' + message + end
