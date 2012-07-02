@@ -91,6 +91,11 @@ def verify_source(verifyid,message,sender,protocol):
 	else:
 		return False
 
+def process(message):
+	"""returns the list for company's arrival date"""
+	msg = message.split()
+	return msg[0].split('-')
+
 class MainPage(webapp.RequestHandler):
 	def get(self):
 		self.response.headers["Content-Type"] = 'text/html'
@@ -117,9 +122,9 @@ class MainPage(webapp.RequestHandler):
 			
 			elif "schedule" in message:				#keyword for checking schedule
 				today = datetime.date.today()
-				yest = today - datetime.timedelta(1)
-				dayBefYest = today - datetime.timedelta(2)
-				scheduled_msgs = db.GqlQuery("SELECT * FROM msglog WHERE arrivalDate > '%r'"%today)			
+				a = today.timetuple()
+				#now = datetime.datetime(a[0],a[1],a[2],a[3],a[4],a[5])
+				scheduled_msgs = db.GqlQuery("SELECT * FROM msglog WHERE arrivalDate >= DATETIME(%d,%d,%d)" %(a[0],a[1],a[2]))			
 				for msg in scheduled_msgs:
 					self.response.out.write('<p>%s</p>'%(msg.msg))		
 			
@@ -149,14 +154,14 @@ class MainPage(webapp.RequestHandler):
 			
 			else:								#keyword to send sms notification to all the registered users
 				if sender in auth_hash:
-					msg = message.split()
+					time = process(message)
 					msglogs = msglog(parent = msglist_key())
 					msglogs.msg = message
 					msglogs.date = str(datetime.date.today())
-					msglogs.arrivalDate = datetime.date(int(msg[2]),int(msg[1]),int(msg[0]))
+					msglogs.arrivalDate = datetime.date(int(time[2]),int(time[1]),int(time[0]))
 					msglogs.put()
 					users = Users.gql("")
-					msg = head + meta + body + str(datetime.date.today()) + ' ' + message + end
+					msg = head + meta + body + message + end
 					success = 0
 					failure = 0
 					for user in users:
